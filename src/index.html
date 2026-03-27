@@ -11,8 +11,61 @@
   <!-- Confetti overlay -->
   <canvas id="confetti-canvas"></canvas>
 
-  <!-- Main game layout — vertical stack -->
-  <div id="game-area">
+  <!-- ===== START SCREEN ===== -->
+  <div id="start-screen">
+    <div id="start-title">Type Critters</div>
+    <div id="start-emojis"></div>
+    <button id="play-btn">PLAY</button>
+  </div>
+
+  <!-- ===== SETTINGS GEAR (tiny, top-right corner) ===== -->
+  <div id="settings-gear" title="Hold to open settings">&#9881;</div>
+
+  <!-- ===== SETTINGS PANEL ===== -->
+  <div id="settings-panel">
+    <div id="settings-inner">
+      <div class="settings-title">Settings</div>
+
+      <label class="setting-row">
+        <span>Word size</span>
+        <select id="setting-length">
+          <option value="all">All words</option>
+          <option value="short">Short (2-3)</option>
+          <option value="medium">Medium (4)</option>
+          <option value="long">Long (5)</option>
+        </select>
+      </label>
+
+      <label class="setting-row">
+        <span>Category</span>
+        <select id="setting-category">
+          <option value="all">Everything</option>
+          <option value="animals">Animals</option>
+          <option value="food">Food</option>
+          <option value="nature">Nature</option>
+          <option value="things">Things</option>
+          <option value="home">Home</option>
+        </select>
+      </label>
+
+      <label class="setting-row">
+        <span>UPPERCASE letters</span>
+        <input type="checkbox" id="setting-uppercase" checked>
+        <span class="toggle"></span>
+      </label>
+
+      <label class="setting-row">
+        <span>Sound</span>
+        <input type="checkbox" id="setting-sound" checked>
+        <span class="toggle"></span>
+      </label>
+
+      <button id="settings-close">Done</button>
+    </div>
+  </div>
+
+  <!-- ===== MAIN GAME AREA ===== -->
+  <div id="game-area" class="hidden">
     <!-- Celebration appears above the word -->
     <div id="celebration">
       <div id="hooray">HOORAY!</div>
@@ -22,16 +75,33 @@
     <!-- Word display -->
     <div id="letters"></div>
 
+    <!-- Idle nudge (pointing hand) -->
+    <div id="idle-nudge">&#128073;</div>
+
     <!-- Press space prompt (below word) -->
     <div id="prompt">press SPACE for the next word</div>
   </div>
 
-  <!-- Last key pressed — fixed at bottom center -->
+  <!-- ===== CRITTER PARADE (bottom of screen) ===== -->
+  <div id="critter-parade"></div>
+
+  <!-- ===== LAST KEY PRESSED ===== -->
   <div id="last-key"></div>
 
-  <!-- Scripts: order matters (words + confetti before game) -->
+  <!-- ===== SESSION SUMMARY (shown on exit) ===== -->
+  <div id="summary-overlay" class="hidden">
+    <div id="summary-box">
+      <div id="summary-title">Great job!</div>
+      <div id="summary-count"></div>
+      <div id="summary-critters"></div>
+      <div id="summary-hint">press ESCAPE again to close</div>
+    </div>
+  </div>
+
+  <!-- Scripts: order matters -->
   <script src="words.js"></script>
   <script src="confetti.js"></script>
+  <script src="sounds.js"></script>
   <script src="game.js"></script>
 
 </body>
