@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Type Critters</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Confetti overlay -->
+  <canvas id="confetti-canvas"></canvas>
+
+  <!-- Main game layout — vertical stack -->
+  <div id="game-area">
+    <!-- Celebration appears above the word -->
+    <div id="celebration">
+      <div id="hooray">HOORAY!</div>
+      <div id="emoji"></div>
+    </div>
+
+    <!-- Word display -->
+    <div id="letters"></div>
+
+    <!-- Press space prompt (below word) -->
+    <div id="prompt">press SPACE for the next word</div>
+  </div>
+
+  <!-- Last key pressed — fixed at bottom center -->
+  <div id="last-key"></div>
+
+  <!-- Scripts: order matters (words + confetti before game) -->
+  <script src="words.js"></script>
+  <script src="confetti.js"></script>
+  <script src="game.js"></script>
+
+</body>
+</html>
