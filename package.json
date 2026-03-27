@@ -6,6 +6,7 @@
   "scripts": {
     "start": "electron .",
     "make": "electron-forge make",
+    "build": "electron-packager . TypeCritters --platform=win32 --arch=x64 --out=dist --overwrite --ignore=\"(planning|dist|out|\\.git|launch\\.sh)\"",
     "web": "serve src --listen 3000 --no-clipboard"
   },
   "keywords": [],
@@ -16,6 +17,7 @@
     "@electron-forge/maker-squirrel": "^7.11.1",
     "@electron-forge/maker-zip": "^7.11.1",
     "electron": "^33.4.0",
+    "electron-packager": "^17.1.2",
     "serve": "^14.2.6"
   },
   "config": {
