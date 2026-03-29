@@ -31,3 +31,26 @@ const WORDS = [
 ];
 
 const CATEGORIES = ['animals', 'food', 'nature', 'things', 'home'];
+
+// Boss words: 6-7 letters, shown as the 5th word of each round
+const BOSS_WORDS = [
+  // Animals
+  ["RABBIT", "\u{1F430}", "animals"], ["PARROT", "\u{1F99C}", "animals"], ["TURTLE", "\u{1F422}", "animals"],
+  ["MONKEY", "\u{1F412}", "animals"], ["KITTEN", "\u{1F431}", "animals"], ["DRAGON", "\u{1F409}", "animals"],
+  ["GIRAFFE", "\u{1F992}", "animals"], ["PENGUIN", "\u{1F427}", "animals"], ["DOLPHIN", "\u{1F42C}", "animals"],
+  ["CHICKEN", "\u{1F414}", "animals"], ["HAMSTER", "\u{1F439}", "animals"], ["OCTOPUS", "\u{1F419}", "animals"],
+  ["LEOPARD", "\u{1F406}", "animals"], ["UNICORN", "\u{1F984}", "animals"],
+  // Food
+  ["COOKIE", "\u{1F36A}", "food"], ["BANANA", "\u{1F34C}", "food"], ["CHERRY", "\u{1F352}", "food"],
+  ["MUFFIN", "\u{1F9C1}", "food"], ["WAFFLE", "\u{1F9C7}", "food"], ["NOODLE", "\u{1F35C}", "food"],
+  ["PANCAKE", "\u{1F95E}", "food"], ["POPCORN", "\u{1F37F}", "food"],
+  // Nature
+  ["FLOWER", "\u{1F338}", "nature"], ["RAINBOW", "\u{1F308}", "nature"], ["VOLCANO", "\u{1F30B}", "nature"],
+  ["THUNDER", "\u{26C8}\u{FE0F}", "nature"],
+  // Things
+  ["CASTLE", "\u{1F3F0}", "things"], ["ROCKET", "\u{1F680}", "things"], ["PUZZLE", "\u{1F9E9}", "things"],
+  ["TROPHY", "\u{1F3C6}", "things"], ["BALLOON", "\u{1F388}", "things"],
+  // Home
+  ["MIRROR", "\u{1FA9E}", "home"], ["BASKET", "\u{1F9FA}", "home"], ["CANDLE", "\u{1F56F}\u{FE0F}", "home"],
+  ["PILLOW", "\u{1FAD7}", "home"],
+];

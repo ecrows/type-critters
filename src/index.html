@@ -11,6 +11,12 @@
   <!-- Confetti overlay -->
   <canvas id="confetti-canvas"></canvas>
 
+  <!-- Boss word banner -->
+  <div id="boss-banner">⭐ CHALLENGE WORD! ⭐</div>
+
+  <!-- Unicorn flyby -->
+  <div id="unicorn">🦄</div>
+
   <!-- ===== START SCREEN ===== -->
   <div id="start-screen">
     <div id="start-title">Type Critters</div>
@@ -79,7 +85,7 @@
     <div id="idle-nudge">&#128073;</div>
 
     <!-- Press space prompt (below word) -->
-    <div id="prompt">press SPACE for the next word</div>
+    <div id="prompt"><span class="spacebar-key">press SPACE for the next word</span></div>
   </div>
 
   <!-- ===== CRITTER PARADE (bottom of screen) ===== -->
@@ -87,6 +93,13 @@
 
   <!-- ===== LAST KEY PRESSED ===== -->
   <div id="last-key"></div>
+
+  <!-- ===== ROUND COMPLETE OVERLAY ===== -->
+  <div id="round-overlay">
+    <div id="round-overlay-emojis"></div>
+    <div id="round-overlay-title">AMAZING!</div>
+    <div id="round-overlay-prompt"><span class="spacebar-key">press SPACE to keep going!</span></div>
+  </div>
 
   <!-- ===== SESSION SUMMARY (shown on exit) ===== -->
   <div id="summary-overlay" class="hidden">
