@@ -437,7 +437,6 @@ body {
 /* ===== LAST KEY PRESSED ===== */
 #last-key {
   position: fixed;
-  bottom: 16vh;
   left: 50%;
   transform: translateX(-50%);
   font-size: clamp(80px, 12vw, 160px);
@@ -446,6 +445,7 @@ body {
   transition: opacity 0.3s ease;
   z-index: 20;
   pointer-events: none;
+  line-height: 1;
 }
 
 #last-key.show {

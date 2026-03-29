@@ -86,6 +86,9 @@ class Game {
     this.applySettings();
     this.showMenu();
 
+    // Reposition last-key on resize
+    window.addEventListener('resize', () => this.positionLastKey());
+
     // Electron IPC: handle Escape from main process
     if (window.electronAPI) {
       window.electronAPI.onEscapePressed(() => this.handleEscape());
@@ -360,10 +363,31 @@ class Game {
     }
   }
 
+  positionLastKey() {
+    // Find the gap between the prompt bottom and the critter parade top
+    const promptRect = this.promptEl.getBoundingClientRect();
+    const paradeRect = this.paradeEl.getBoundingClientRect();
+
+    const gapTop = promptRect.bottom;
+    const gapBottom = paradeRect.top > 0 ? paradeRect.top : window.innerHeight - 12;
+    const gap = gapBottom - gapTop;
+
+    // Max font size matches the CSS clamp max (160px), scale down if gap is tight
+    const maxSize = Math.min(160, window.innerWidth * 0.12);
+    // Leave some breathing room — letter shouldn't fill more than ~70% of the gap
+    const fittedSize = Math.min(maxSize, gap * 0.7);
+    const fontSize = Math.max(40, fittedSize);
+
+    this.lastKeyEl.style.fontSize = `${fontSize}px`;
+    // Center vertically in the gap
+    this.lastKeyEl.style.top = `${gapTop + (gap - fontSize) / 2}px`;
+  }
+
   showLastKey(letter, correct) {
     clearTimeout(this.lastKeyTimeout);
     this.lastKeyEl.className = '';
     this.lastKeyEl.textContent = letter;
+    this.positionLastKey();
     void this.lastKeyEl.offsetWidth;
     this.lastKeyEl.classList.add('show', correct ? 'correct' : 'wrong');
     this.lastKeyTimeout = setTimeout(() => {
