@@ -66,10 +66,12 @@ class SoundFX {
     });
   }
 
-  // Cheerful fanfare for single word completion
-  fanfare() {
+  // Cheerful fanfare for word completion — pitch rises with each word in the round
+  // step: 1-5 (word position in round); each step = 2 semitones higher
+  fanfare(step = 1) {
     this.play((ctx) => {
-      const notes = [523, 659, 784, 1047]; // C5 E5 G5 C6
+      const transpose = Math.pow(2, (step - 1) * 2 / 12);
+      const notes = [523, 659, 784, 1047].map(f => f * transpose); // C5 E5 G5 C6 + transposition
       notes.forEach((freq, i) => {
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
@@ -87,6 +89,55 @@ class SoundFX {
         osc.start(t);
         osc.stop(t + 0.4);
       });
+    });
+  }
+
+  // Fireworks blast: rising whistle + noise burst — randomized for variety
+  blast() {
+    this.play((ctx) => {
+      const t = ctx.currentTime;
+      const whistleStart = 300 + Math.random() * 300;
+      const whistleEnd  = 1400 + Math.random() * 1000;
+
+      // Rising whistle
+      const osc = ctx.createOscillator();
+      const oscGain = ctx.createGain();
+      osc.connect(oscGain);
+      oscGain.connect(ctx.destination);
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(whistleStart, t);
+      osc.frequency.exponentialRampToValueAtTime(whistleEnd, t + 0.32);
+      oscGain.gain.setValueAtTime(0.12, t);
+      oscGain.gain.exponentialRampToValueAtTime(0.001, t + 0.32);
+      osc.start(t);
+      osc.stop(t + 0.32);
+
+      // Noise burst
+      const bufLen = Math.floor(ctx.sampleRate * 0.55);
+      const buf = ctx.createBuffer(1, bufLen, ctx.sampleRate);
+      const data = buf.getChannelData(0);
+      for (let i = 0; i < bufLen; i++) data[i] = Math.random() * 2 - 1;
+
+      const noise = ctx.createBufferSource();
+      noise.buffer = buf;
+
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'bandpass';
+      filter.frequency.value = 600 + Math.random() * 600;
+      filter.Q.value = 0.6;
+
+      const burstGain = ctx.createGain();
+      noise.connect(filter);
+      filter.connect(burstGain);
+      burstGain.connect(ctx.destination);
+
+      const bt = t + 0.28;
+      burstGain.gain.setValueAtTime(0, bt);
+      burstGain.gain.linearRampToValueAtTime(0.38, bt + 0.025);
+      burstGain.gain.exponentialRampToValueAtTime(0.001, bt + 0.5);
+
+      noise.start(bt);
+      noise.stop(bt + 0.55);
     });
   }
 

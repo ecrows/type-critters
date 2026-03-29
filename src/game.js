@@ -368,7 +368,7 @@ class Game {
         const cx = (0.1 + Math.random() * 0.8) * window.innerWidth;
         const cy = (0.1 + Math.random() * 0.7) * window.innerHeight;
         this.confetti.burst(cx, cy, 45);
-        this.sounds.fanfare();
+        this.sounds.blast();
 
         if (!this.roundFirstPressed) {
           // First press: start the 5-second timer before "continue" appears
@@ -479,7 +479,7 @@ class Game {
 
     if (Math.random() < 0.2) this.flyUnicorn();
 
-    this.sounds.fanfare();
+    this.sounds.fanfare(this.wordsInRound); // pitch rises word 1→5 in each round
 
     this.emojiEl.textContent = this.currentEmoji;
     this.celebrationEl.classList.add('visible');
