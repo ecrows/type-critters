@@ -41,6 +41,13 @@ class Game {
     this.roundCritters = [];  // emojis collected this round (for overlay)
     this.isBossWord = false;
 
+    // Round complete state
+    this.roundFirstPressed = false;   // has kid pressed space once yet?
+    this.roundCanContinue = false;    // timer expired after first press?
+    this.roundContinueTimer = null;
+    this.roundAnimFrame = null;
+    this.roundEmojiObjects = [];      // [{el, x, y, vx, vy}] for JS animation
+
     // Settings (load from localStorage)
     this.settings = this.loadSettings();
 
@@ -72,6 +79,7 @@ class Game {
     this.roundOverlay = document.getElementById('round-overlay');
     this.roundOverlayTitle = document.getElementById('round-overlay-title');
     this.roundOverlayEmojis = document.getElementById('round-overlay-emojis');
+    this.roundFireworksPrompt = document.getElementById('round-fireworks-prompt');
     this.roundOverlayPrompt = document.getElementById('round-overlay-prompt');
     this.unicornEl = document.getElementById('unicorn');
 
@@ -151,12 +159,10 @@ class Game {
       filtered = filtered.filter(([word]) => word.length >= min && word.length <= max);
     }
 
-    // Fallback: if filters eliminate everything, use all words
     return filtered.length > 0 ? filtered : WORDS;
   }
 
   getBossWords() {
-    // Boss words always come from BOSS_WORDS; respect category filter but not length
     if (this.settings.category !== 'all') {
       const filtered = BOSS_WORDS.filter(([, , cat]) => cat === this.settings.category);
       return filtered.length > 0 ? filtered : BOSS_WORDS;
@@ -167,16 +173,13 @@ class Game {
   // ===== EVENT BINDING =====
 
   bindEvents() {
-    // Keyboard
     window.addEventListener('keydown', (e) => this.onKey(e));
 
-    // Play button
     this.playBtn.addEventListener('click', () => {
       this.sounds.click();
       this.startGame();
     });
 
-    // Settings gear — long press to open
     this.settingsGear.addEventListener('mousedown', () => this.startGearHold());
     this.settingsGear.addEventListener('touchstart', (e) => { e.preventDefault(); this.startGearHold(); });
     this.settingsGear.addEventListener('mouseup', () => this.cancelGearHold());
@@ -184,10 +187,8 @@ class Game {
     this.settingsGear.addEventListener('touchend', () => this.cancelGearHold());
     this.settingsGear.addEventListener('touchcancel', () => this.cancelGearHold());
 
-    // Settings close
     this.settingsCloseBtn.addEventListener('click', () => this.closeSettings());
 
-    // Click backdrop to close settings
     this.settingsPanel.addEventListener('click', (e) => {
       if (e.target === this.settingsPanel) this.closeSettings();
     });
@@ -213,8 +214,7 @@ class Game {
     this.startScreen.classList.remove('hidden');
     this.gameArea.classList.add('hidden');
     this.summaryOverlay.classList.add('hidden');
-    this.roundOverlay.classList.remove('visible');
-    this.roundOverlayPrompt.classList.remove('visible');
+    this.stopRoundCelebration();
     this.paradeEl.innerHTML = '';
     this.collectedCritters = [];
     this.wordsCompleted = 0;
@@ -223,7 +223,6 @@ class Game {
     this.isBossWord = false;
     this.clearIdleTimer();
 
-    // Populate bouncing critter emojis
     this.startEmojis.innerHTML = '';
     const critters = shuffle([...MENU_CRITTERS]).slice(0, 5);
     critters.forEach((em, i) => {
@@ -260,11 +259,7 @@ class Game {
     this.settingsPanel.classList.remove('visible');
     this.state = this.previousState || State.MENU;
     this.sounds.click();
-
-    // Release focus from settings controls so keydown reaches the game
     document.activeElement.blur();
-
-    // If we're mid-game, rebuild the current word with new case setting
     if (this.state === State.SHOWING_WORD) {
       this.rebuildCurrentWord();
       this.resetIdleTimer();
@@ -303,12 +298,10 @@ class Game {
     this.state = State.SHOWING_WORD;
     this.colorIndex = (this.colorIndex + 1) % HIGHLIGHT_COLORS.length;
 
-    // Hide celebration and prompt
     this.celebrationEl.classList.remove('visible');
     this.promptEl.classList.remove('visible');
     this.hideIdleNudge();
 
-    // Build letter elements
     this.lettersContainer.innerHTML = '';
     this.lettersContainer.classList.toggle('boss-word', this.isBossWord);
 
@@ -323,7 +316,6 @@ class Game {
       this.lettersContainer.appendChild(span);
     }
 
-    // Fade in
     this.lettersContainer.classList.remove('fade-out');
     this.lettersContainer.classList.add('fade-in');
 
@@ -352,13 +344,11 @@ class Game {
   onKey(e) {
     if (e.ctrlKey || e.altKey || e.metaKey) return;
 
-    // Escape handling — use dedicated method
     if (e.key === 'Escape') {
       this.handleEscape();
       return;
     }
 
-    // Menu: Space or Enter to start
     if (this.state === State.MENU) {
       if (e.key === ' ' || e.key === 'Enter') {
         this.sounds.click();
@@ -367,26 +357,36 @@ class Game {
       return;
     }
 
-    // Settings: ignore game keys
     if (this.state === State.SETTINGS || this.state === State.SUMMARY) return;
 
     if (e.key.length !== 1 && e.key !== ' ') return;
 
-    // Round complete: space = fireworks, or advance if prompt is visible
+    // Round complete: space = fireworks (always), advance only after continue prompt appears
     if (this.state === State.ROUND_COMPLETE) {
       if (e.key === ' ') {
+        // Burst confetti at a random position
         const cx = (0.1 + Math.random() * 0.8) * window.innerWidth;
-        const cy = (0.1 + Math.random() * 0.75) * window.innerHeight;
-        this.confetti.burst(cx, cy, 40);
+        const cy = (0.1 + Math.random() * 0.7) * window.innerHeight;
+        this.confetti.burst(cx, cy, 45);
         this.sounds.fanfare();
-        // Press the spacebar key visually
-        if (this.roundOverlayPrompt.classList.contains('visible')) {
+
+        if (!this.roundFirstPressed) {
+          // First press: start the 5-second timer before "continue" appears
+          this.roundFirstPressed = true;
+          this.roundContinueTimer = setTimeout(() => {
+            this.roundCanContinue = true;
+            // Swap prompts: hide fireworks, show continue
+            this.roundFireworksPrompt.classList.add('hidden-fade');
+            this.roundOverlayPrompt.classList.add('visible');
+          }, 5000);
+        } else if (this.roundCanContinue) {
+          // Press the spacebar key visually then advance
           const key = this.roundOverlayPrompt.querySelector('.spacebar-key');
           if (key) {
             key.classList.add('pressed');
             setTimeout(() => key.classList.remove('pressed'), 120);
           }
-          this.advanceRound();
+          setTimeout(() => this.advanceRound(), 130);
         }
       }
       return;
@@ -394,7 +394,6 @@ class Game {
 
     if (this.state === State.CELEBRATING) {
       if (e.key === ' ') {
-        // Visual press feedback on spacebar key
         if (this.spacebarKeyEl) {
           this.spacebarKeyEl.classList.add('pressed');
           setTimeout(() => this.spacebarKeyEl.classList.remove('pressed'), 120);
@@ -415,8 +414,7 @@ class Game {
     const currentEl = letters[this.cursorPos];
 
     if (typed === target) {
-      // Correct!
-      this.sounds.pop();
+      this.sounds.pop(this.cursorPos); // pitch steps up with each correct letter
       this.showLastKey(this.formatLetter(typed), true);
       currentEl.classList.remove('active');
       currentEl.classList.add('correct');
@@ -433,7 +431,6 @@ class Game {
         nextEl.style.color = HIGHLIGHT_COLORS[this.colorIndex];
       }
     } else {
-      // Wrong
       this.sounds.boop();
       this.showLastKey(this.formatLetter(typed), false);
       currentEl.classList.add('wobble');
@@ -442,7 +439,6 @@ class Game {
   }
 
   positionLastKey() {
-    // Find the gap between the prompt bottom and the critter parade top
     const promptRect = this.promptEl.getBoundingClientRect();
     const paradeRect = this.paradeEl.getBoundingClientRect();
 
@@ -450,7 +446,6 @@ class Game {
     const gapBottom = paradeRect.top > 0 ? paradeRect.top : window.innerHeight - 12;
     const gap = gapBottom - gapTop;
 
-    // Max font size matches the CSS clamp max (160px), scale down if gap is tight
     const maxSize = Math.min(160, window.innerWidth * 0.12);
     const fittedSize = Math.min(maxSize, gap * 0.7);
     const fontSize = Math.max(40, fittedSize);
@@ -479,21 +474,16 @@ class Game {
     this.wordsInRound++;
     this.clearIdleTimer();
 
-    // Add critter to parade and round collection
     this.addCritter(this.currentEmoji);
     this.roundCritters.push(this.currentEmoji);
 
-    // 20% chance of a unicorn flyby
     if (Math.random() < 0.2) this.flyUnicorn();
 
-    // Sound
     this.sounds.fanfare();
 
-    // Show emoji + hooray
     this.emojiEl.textContent = this.currentEmoji;
     this.celebrationEl.classList.add('visible');
 
-    // Confetti
     const cx = window.innerWidth / 2;
     const cy = window.innerHeight / 2;
     this.confetti.burst(cx, cy, 70);
@@ -502,66 +492,114 @@ class Game {
     }, 300);
 
     if (this.wordsInRound >= 5) {
-      // Round complete — show special overlay after brief celebration
       setTimeout(() => this.showRoundComplete(), 1400);
     } else {
-      // Normal — show space prompt
       setTimeout(() => {
         this.promptEl.classList.add('visible');
       }, 1500);
     }
   }
 
+  // ===== ROUND COMPLETE =====
+
   showRoundComplete() {
     this.state = State.ROUND_COMPLETE;
+    this.roundFirstPressed = false;
+    this.roundCanContinue = false;
 
-    // Hide normal celebration elements
+    // Hide normal celebration
     this.celebrationEl.classList.remove('visible');
     this.promptEl.classList.remove('visible');
 
-    // Restart title animation each round
+    // Restart AMAZING! pop animation
     this.roundOverlayTitle.classList.remove('pop');
     void this.roundOverlayTitle.offsetWidth;
     this.roundOverlayTitle.classList.add('pop');
 
-    // Populate bouncing emojis at random positions
+    // Reset prompts
+    this.roundFireworksPrompt.classList.remove('hidden-fade');
+    this.roundOverlayPrompt.classList.remove('visible');
+
+    // Build emoji objects for JS animation
     this.roundOverlayEmojis.innerHTML = '';
-    this.roundCritters.forEach((emoji, i) => {
+    this.roundEmojiObjects = [];
+
+    // Emoji size approximation for boundary checking
+    const emojiSize = Math.min(130, Math.max(70, window.innerWidth * 0.12));
+    const margin = emojiSize * 0.5;
+
+    this.roundCritters.forEach((emoji) => {
       const span = document.createElement('span');
       span.textContent = emoji;
-      span.style.setProperty('--rx', `${12 + Math.random() * 72}%`);
-      span.style.setProperty('--ry', `${28 + Math.random() * 46}%`);
-      span.style.setProperty('--bd', `${1.3 + Math.random() * 0.8}s`);
-      span.style.setProperty('--dd', `${i * 0.12}s`);
-      span.style.setProperty('--ra', `${(Math.random() - 0.5) * 18}deg`);
-      span.style.setProperty('--rb', `${(Math.random() - 0.5) * 18}deg`);
       this.roundOverlayEmojis.appendChild(span);
+
+      const x = margin + Math.random() * (window.innerWidth - emojiSize - margin * 2);
+      const y = margin + Math.random() * (window.innerHeight * 0.6);
+      const speed = 2.0 + Math.random() * 1.8;
+      const angle = Math.random() * Math.PI * 2;
+
+      span.style.left = `${x}px`;
+      span.style.top = `${y}px`;
+
+      this.roundEmojiObjects.push({ el: span, x, y, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed });
     });
 
-    this.roundOverlayPrompt.classList.remove('visible');
     this.roundOverlay.classList.add('visible');
+
+    // Play victory tune
+    this.sounds.victory();
 
     // Big confetti burst
     this.confetti.burst(window.innerWidth / 2, window.innerHeight / 2, 120);
     setTimeout(() => {
-      this.confetti.burst(window.innerWidth * 0.2, window.innerHeight * 0.35, 50);
-      this.confetti.burst(window.innerWidth * 0.8, window.innerHeight * 0.35, 50);
-    }, 400);
+      this.confetti.burst(window.innerWidth * 0.2, window.innerHeight * 0.4, 50);
+      this.confetti.burst(window.innerWidth * 0.8, window.innerHeight * 0.4, 50);
+    }, 350);
 
-    // Show continue prompt after 3 seconds
-    setTimeout(() => {
-      if (this.state === State.ROUND_COMPLETE) {
-        this.roundOverlayPrompt.classList.add('visible');
-      }
-    }, 3000);
+    // Start emoji animation loop
+    this.animateRoundEmojis();
+  }
+
+  animateRoundEmojis() {
+    if (this.state !== State.ROUND_COMPLETE) return;
+
+    const emojiSize = Math.min(130, Math.max(70, window.innerWidth * 0.12));
+    const maxX = window.innerWidth - emojiSize;
+    const maxY = window.innerHeight - emojiSize;
+
+    for (const obj of this.roundEmojiObjects) {
+      obj.x += obj.vx;
+      obj.y += obj.vy;
+
+      if (obj.x <= 0) { obj.vx = Math.abs(obj.vx); obj.x = 0; }
+      else if (obj.x >= maxX) { obj.vx = -Math.abs(obj.vx); obj.x = maxX; }
+
+      if (obj.y <= 0) { obj.vy = Math.abs(obj.vy); obj.y = 0; }
+      else if (obj.y >= maxY) { obj.vy = -Math.abs(obj.vy); obj.y = maxY; }
+
+      obj.el.style.left = `${obj.x}px`;
+      obj.el.style.top = `${obj.y}px`;
+    }
+
+    this.roundAnimFrame = requestAnimationFrame(() => this.animateRoundEmojis());
+  }
+
+  stopRoundCelebration() {
+    cancelAnimationFrame(this.roundAnimFrame);
+    clearTimeout(this.roundContinueTimer);
+    this.roundAnimFrame = null;
+    this.roundContinueTimer = null;
+    this.roundOverlay.classList.remove('visible');
+    this.roundOverlayPrompt.classList.remove('visible');
+    this.roundFirstPressed = false;
+    this.roundCanContinue = false;
   }
 
   advanceRound() {
-    this.roundOverlay.classList.remove('visible');
-    this.roundOverlayPrompt.classList.remove('visible');
+    this.stopRoundCelebration();
     this.wordsInRound = 0;
     this.roundCritters = [];
-    this.paradeEl.innerHTML = ''; // reset visual parade for new round
+    this.paradeEl.innerHTML = '';
     this.nextWord();
   }
 
@@ -598,11 +636,9 @@ class Game {
 
   showIdleNudge() {
     if (this.state !== State.SHOWING_WORD) return;
-
     const letters = this.lettersContainer.querySelectorAll('.letter');
     const activeEl = letters[this.cursorPos];
     if (!activeEl) return;
-
     const rect = activeEl.getBoundingClientRect();
     this.idleNudge.style.left = `${rect.left - 60}px`;
     this.idleNudge.style.top = `${rect.top + rect.height / 2 - 30}px`;
@@ -617,13 +653,11 @@ class Game {
 
   handleEscape() {
     if (this.state === State.ROUND_COMPLETE) {
-      this.roundOverlay.classList.remove('visible');
-      this.roundOverlayPrompt.classList.remove('visible');
+      this.stopRoundCelebration();
       this.showSummary();
       return;
     }
     if (this.state === State.SUMMARY) {
-      // Second escape: quit (Electron) or go to menu (web)
       if (window.electronAPI) {
         window.electronAPI.quitApp();
       } else {
@@ -639,7 +673,6 @@ class Game {
       this.showSummary();
       return;
     }
-    // From menu: quit if Electron
     if (this.state === State.MENU && window.electronAPI) {
       window.electronAPI.quitApp();
     }
@@ -651,10 +684,9 @@ class Game {
     this.state = State.SUMMARY;
     this.clearIdleTimer();
     this.hideIdleNudge();
-    this.roundOverlay.classList.remove('visible');
+    this.stopRoundCelebration();
 
     if (this.wordsCompleted === 0) {
-      // Nothing to show, just go to menu
       this.showMenu();
       return;
     }

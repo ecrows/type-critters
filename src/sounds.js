@@ -20,17 +20,23 @@ class SoundFX {
     fn(this.ctx);
   }
 
-  // Bright pop for correct letter
-  pop() {
+  // Bright pop for correct letter — pitch rises with each step in the word
+  // step: 0-based index of the letter just typed (0 = first letter)
+  pop(step = 0) {
     this.play((ctx) => {
+      // 2 semitones up per step — satisfying climb from ~660Hz to ~1320Hz over 6 steps
+      const baseFreq = 660;
+      const freq = baseFreq * Math.pow(2, step / 6);
+      const topFreq = freq * 1.5;
+
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.connect(gain);
       gain.connect(ctx.destination);
 
       osc.type = 'sine';
-      osc.frequency.setValueAtTime(880, ctx.currentTime);
-      osc.frequency.exponentialRampToValueAtTime(1320, ctx.currentTime + 0.06);
+      osc.frequency.setValueAtTime(freq, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(topFreq, ctx.currentTime + 0.06);
 
       gain.gain.setValueAtTime(0.18, ctx.currentTime);
       gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
@@ -60,7 +66,7 @@ class SoundFX {
     });
   }
 
-  // Cheerful fanfare for word completion
+  // Cheerful fanfare for single word completion
   fanfare() {
     this.play((ctx) => {
       const notes = [523, 659, 784, 1047]; // C5 E5 G5 C6
@@ -80,6 +86,56 @@ class SoundFX {
 
         osc.start(t);
         osc.stop(t + 0.4);
+      });
+    });
+  }
+
+  // FF-style victory fanfare for round completion — two-phrase triumphant tune
+  victory() {
+    this.play((ctx) => {
+      // [freq (Hz), startTime (s), duration (s), volume]
+      const notes = [
+        // Phrase 1 — ascending pickup
+        [330, 0.00, 0.09, 0.20],  // E4
+        [415, 0.09, 0.09, 0.20],  // G#4
+        [440, 0.18, 0.09, 0.22],  // A4
+        // Phrase 1 — main hit
+        [659, 0.27, 0.38, 0.26],  // E5
+        // Phrase 1 — ascending run
+        [440, 0.72, 0.13, 0.18],  // A4
+        [494, 0.85, 0.13, 0.18],  // B4
+        [554, 0.98, 0.13, 0.18],  // C#5
+        [659, 1.11, 0.38, 0.24],  // E5
+        // Phrase 2 — pickup (one step higher)
+        [440, 1.56, 0.09, 0.18],  // A4
+        [554, 1.65, 0.09, 0.18],  // C#5
+        [659, 1.74, 0.09, 0.18],  // E5
+        // Phrase 2 — main hit
+        [880, 1.83, 0.38, 0.26],  // A5
+        // Phrase 2 — final ascending run
+        [659, 2.28, 0.12, 0.18],  // E5
+        [740, 2.40, 0.12, 0.18],  // F#5
+        [831, 2.52, 0.12, 0.18],  // G#5
+        [880, 2.64, 0.85, 0.30],  // A5 — held final note
+      ];
+
+      notes.forEach(([freq, start, dur, vol]) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        osc.type = 'triangle';
+        const t = ctx.currentTime + start;
+        osc.frequency.setValueAtTime(freq, t);
+
+        gain.gain.setValueAtTime(0, t);
+        gain.gain.linearRampToValueAtTime(vol, t + 0.02);
+        gain.gain.setValueAtTime(vol, t + dur * 0.72);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + dur);
+
+        osc.start(t);
+        osc.stop(t + dur + 0.01);
       });
     });
   }
