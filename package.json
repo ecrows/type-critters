@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "A fun typing game for kids",
   "main": "src/main.js",
+  "repository": "https://github.com/ecrows/type-critters",
   "scripts": {
     "start": "electron .",
     "make": "electron-forge make",
@@ -12,6 +13,9 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
+  "dependencies": {
+    "update-electron-app": "^3.1.2"
+  },
   "devDependencies": {
     "@electron-forge/cli": "^7.11.1",
     "@electron-forge/maker-squirrel": "^7.11.1",
@@ -35,7 +39,8 @@
         {
           "name": "@electron-forge/maker-squirrel",
           "config": {
-            "name": "TypeCritters"
+            "name": "TypeCritters",
+            "setupExe": "TypeCrittersSetup.exe"
           }
         }
       ]

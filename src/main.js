@@ -1,5 +1,10 @@
 const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
+const { updateElectronApp } = require('update-electron-app');
+
+if (app.isPackaged) {
+  updateElectronApp();
+}
 
 function createWindow() {
   const win = new BrowserWindow({
